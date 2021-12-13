@@ -8,10 +8,10 @@ import java.util.List;
 import javax.persistence.NoResultException;
 import javax.persistence.TypedQuery;
 
-import com.db4o.query.Query;
+
 
 import modelo.Participante;
-import modelo.Pessoa;
+
 import modelo.Reuniao;
 
 public class DAOReuniao extends DAO<Reuniao>{
@@ -39,7 +39,7 @@ public List<Reuniao> readAll(){
 }
 
 public List<Participante> readByData(String nome, int mes){
-	
+	try {
 	TypedQuery<Reuniao> q = manager.createQuery("select reuniao from Reuniao reuniao", Reuniao.class);
 	List<Participante> reunioes_com_participante = new ArrayList<Participante>();
 	List<Reuniao> reunioes = q.getResultList();
@@ -47,12 +47,16 @@ public List<Participante> readByData(String nome, int mes){
 	for(Reuniao r: reunioes) {
 		LocalDateTime data = r.getDatahora();
 		int month = data.getMonthValue();
-		if(r.localizarParticipante(nome) != null && month==mes) {
+		if(r.localizarParticipante(nome) == null && month==mes) {
 			reunioes_com_participante.addAll(r.getParticipantes());
 		}
 	}
-	
 	return reunioes_com_participante;
+	
+	}catch(NoResultException e){
+		return null;
+	}
+	
 	
 }
 	
