@@ -4,15 +4,15 @@ package fachada;
  * Programação Orientada a Objetos
  * Prof. Fausto Maranhão Ayres
  * Grupo: Luís Henrique Ferreira Freire(20201370005)
- * Entrega: 10/11/2021 23:40
  **********************************/
 
+import java.sql.Date;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 /*
@@ -28,7 +28,6 @@ import daojpa.DAO;
 import daojpa.DAOConvidado;
 import daojpa.DAOParticipante;
 import daojpa.DAOReuniao;
-
 import modelo.Convidado;
 import modelo.Participante;
 import modelo.Reuniao;
@@ -56,10 +55,11 @@ public class Fachada {
 	public static void	finalizar() {
 		DAO.close();
 	}
-
+	
+	
 
 	public static Participante criarParticipante(String nome, String email) throws Exception {
-
+		
 		nome = nome.trim ();
 		email = email.trim();
 
@@ -67,20 +67,14 @@ public class Fachada {
 		DAO.begin();
 		//Verificar se o participande existe
 		Participante p = daoparticipante.read(nome); //localizarParticipante
-		if (p!=null) {
-			DAO.rollback();
-			throw new Exception("Participante " + nome + " ja cadastrado(a)");
-		}
-		//Verificar se o Email existe
-		//p = daoparticipante.readByEmail(email);
-		//if (p!=null)
-		//throw new Exception("Email " + email + " ja cadastrado(a)");
-
+				if (p!=null) {
+					DAO.rollback();	
+					throw new Exception("Participante " + nome + " ja cadastrado(a)");
+				}
+		
 		//Cadastrar participante na reunião
-		//p = new Participante (nome, email);
-		p = new Participante();
-		p.setNome(nome);
-		p.setEmail(email);
+		p = new Participante (nome, email);
+
 		//persistir novo participante
 		daoparticipante.create(p);
 		//...
@@ -94,80 +88,73 @@ public class Fachada {
 		nome = nome.trim();
 		email = email.trim();
 		empresa = empresa.trim();
-
+		
 		//inicio da transacao
 		DAO.begin();
 		//Verificar se o convidado existe
 		Participante p = daoconvidado.read(nome); //localizarParticipante
-		if (p!=null)
-			throw new Exception("Participante " + nome + " ja cadastrado(a)");
+					if (p!=null) {
+						DAO.rollback();	
+						throw new Exception("Participante " + nome + " ja cadastrado(a)");
+					}
 		//Verificar se o Email existe
 		//p = daoconvidado.readByEmail(email);
-		//if (p!=null)
-		//throw new Exception("Email " + email + " ja cadastrado(a)");
+				//if (p!=null)
+					//throw new Exception("Email " + email + " ja cadastrado(a)");
 
 		//Cadastrar participante na reunião
-		//Convidado conv = new Convidado(nome, email, empresa);
-		Convidado conv = new Convidado();
-		conv.setNome(nome);
-		conv.setEmail(email);
-		conv.setEmpresa(empresa);
+		Convidado conv = new Convidado(nome, email, empresa);
+
 		//persistir novo convidado no banco
-		daoparticipante.create(conv);
+		daoconvidado.create(conv);
 		//...
 		//fim da transacao
 		DAO.commit();
 		return conv;	
 	}	
 
-	public static Reuniao criarReuniao (String datahora, String assunto, ArrayList<String> nomes) 
-			throws Exception{
+	public static Reuniao criarReuniao (String datahora, String assunto, ArrayList<String> nomes) throws Exception{
 		assunto = assunto.trim();
 
 		//inicio da transacao
 		DAO.begin();
-
+		
 		LocalDateTime dth;
 		try {
 			DateTimeFormatter parser = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 			dth  = LocalDateTime.parse(datahora, parser); 
 		}
 		catch(DateTimeParseException e) {
-			DAO.rollback();
+			DAO.rollback();	
 			throw new Exception ("reuniao com formato de data invalido");
 		}
 
 		//Verificar o tamanho da lista de participantes se é > 2
-		if (nomes.size()<2) {
-			DAO.rollback();
+		if (nomes.size()<2) { 
+			DAO.rollback();	
 			throw new Exception ("Reunião sem quórum mínimo de dois participantes");
 		}
+
 		ArrayList<Participante> participantes = new ArrayList<>();
 		for(String n : nomes) { 
 			//Verificar se o participante existe
 			Participante p =  daoparticipante.read(n);//localizarParticipante
-			if(p == null) {
-				DAO.rollback();
+			if(p == null) { 
+				DAO.rollback();	
 				throw new Exception ("Participante " + n + " inexistente"); 
 			}
+
 			//Verificar se o participante já está em outra reunião no mesmo horário
 			for (Reuniao r1 : p.getReunioes()) 	{
-				if(r1!=null) {
-					Duration duracao = Duration.between(r1.getDatahora(), dth); //(d - hinicio)
-					long horas = duracao.toHours();
-					if(Math.abs(horas) < 2) {
-						DAO.rollback();
-						throw new Exception("Participante já está em outra reunião nesse horário");
-					}
-				}
+				Duration duracao = Duration.between(r1.getDatahora(), dth); //(d - hinicio)
+				long horas = duracao.toHours();
+				if(Math.abs(horas) < 2) 
+					throw new Exception("Participante já está em outra reunião nesse horário");
 			}
 			participantes.add(p);
 		}
-	//	Reuniao r = new Reuniao(dth, assunto);	
-		Reuniao r = new Reuniao();
-		r.setAssunto(assunto);
-		r.setDatahora(dth);
-	
+		Reuniao r = new Reuniao(dth, assunto);	
+		
 		//relacionar participante e reuniao 
 		for(Participante p : participantes)	{
 			r.adicionar(p);
@@ -175,13 +162,16 @@ public class Fachada {
 		}
 
 		//persistir nova reuniao no banco
-		//r.setAssunto(assunto);
-		//r.setDatahora(LocalDateTime.now());
+		
+		r.setAssunto(assunto);
+		r.setDatahora(dth);
 		daoreuniao.create(r);
 		//...
 		//fim da transacao
 		DAO.commit();
 		//enviar email para participantes
+		//for(Participante p : participantes)	
+			//enviarEmail(p.getEmail(), "nova reunião", "Você foi agendado para a reunião na data:"+r.getDatahora()+" e assunto:"+assunto);
 
 		return r;
 	}
@@ -192,10 +182,10 @@ public class Fachada {
 		//inicio da transacao
 		DAO.begin();
 		//Verificar se o participante existe
-		Participante p = daoparticipante.read(nome);//localizarParticipante
-		if(p == null) {
-			DAO.rollback();
-			throw new Exception("Participante " + nome + " não consta no cadastro");
+		Participante p = daoparticipante.read(nome); //localizarParticipante
+		if (p==null) {
+			DAO.rollback();	
+			throw new Exception("Participante " + nome + " não cadastrado(a)");
 		}
 
 		//Verificar de a reuniaão existe no repositório
@@ -205,21 +195,19 @@ public class Fachada {
 			throw new Exception("Reuniao " + id + " não cadastrada");
 		}
 
+
 		//Verificar se o participante já participa desta reunião
-		if(r.localizarParticipante(nome) == p) { 
-			DAO.rollback();
+		if(r.localizarParticipante(nome) == p) 
 			throw new Exception("Participante " + nome + " já cadastrado na reunião " + id);
-		}
+
 		//Verificar se o participante já está em outra reunião no mesmo horário
 		for (Reuniao r1 : p.getReunioes()) 	{
-			if(r1 != null) {
-				LocalDateTime hinicio = r1.getDatahora();
-				Duration duracao = Duration.between(r1.getDatahora(), r.getDatahora());
-				long horas = duracao.toHours();
-				if(Math.abs(horas) < 2) {
-					DAO.rollback();
-					throw new Exception("Participante já está em outra reunião nesse horário");
-				}
+			LocalDateTime hinicio = r1.getDatahora();
+			Duration duracao = Duration.between(r1.getDatahora(), r.getDatahora());
+			long horas = duracao.toHours();
+			if(Math.abs(horas) < 2) {
+				DAO.rollback();
+				throw new Exception("Participante já está em outra reunião nesse horário");
 			}
 		}
 
@@ -233,19 +221,23 @@ public class Fachada {
 		//fim da transacao
 		DAO.commit();
 		//enviar email para o novo participante
-		//enviarEmail(p.getEmail(), "novo participante", "Você foi adicionado a reunião na data:"+r.getDatahora()+" e assunto:"+r.getAssunto());
+	//	enviarEmail(p.getEmail(), "novo participante", "Você foi adicionado a reunião na data:"+r.getDatahora()+" e assunto:"+r.getAssunto());
 
 	}
 
 	public static void 	removerParticipanteReuniao(String nome, int id) throws Exception	{
-		nome = nome.trim();
+		
 
 		//inicio da transacao
 		DAO.begin();
+		
+		nome = nome.trim();
 		//Verificar se o participante existe
-		Participante p = daoparticipante.read(nome);//localizarParticipante
-		if(p == null) 
-			throw new Exception("Participante " + nome + " não consta no cadastro");
+		Participante p = daoparticipante.read(nome); //localizarParticipante
+		if (p==null) {
+			DAO.rollback();	
+			throw new Exception("Participante " + nome + " não cadastrado(a)");
+		}
 
 		//Verificar se a reunião está cadastrada
 		Reuniao r = daoreuniao.read(id);//localizarReuniao 
@@ -253,57 +245,60 @@ public class Fachada {
 			DAO.rollback();
 			throw new Exception("Reuniao " + id + " não cadastrada");
 		}
+
 		//Remover participante da reunião 
+		
 		r.remover(p);
 		p.remover(r);
-
+		
 		//atualizar reuniao no banco
-
-
 		if(r.getTotalParticipantes()<2) {
-			/*for(Participante c: r.getParticipantes()) {
-				r.remover(c);
-				c.remover(r);
-				daoparticipante.update(c);
-			}*/
-			daoreuniao.delete(r);	
+			daoreuniao.delete(r);
 		}else {
 			daoreuniao.update(r);
 		}
-
-
 		//...
 		//fim da transacao
 		DAO.commit();
+		//enviar email para o  participante removido
+	//	enviarEmail(p.getEmail(), "participante removido", "Você foi removido da reunião na data:"+r.getDatahora()+" e assunto:"+r.getAssunto());
+
+		//Cancelar a reunião por falta de quórum mínimo de 2 participantes
+		if(r.getTotalParticipantes() < 2) {
+			cancelarReuniao(r.getId());
+			
+		}
 
 	}
 
 	public static void	cancelarReuniao(int id) throws Exception	{
 		//inicio da transacao
-		DAO.begin();
-		//Verificar se a reunião está cadastrada
-		Reuniao r = daoreuniao.read(id);//repositorio.localizarReuniao(id);
-		if (r == null) {
-			DAO.rollback();
-			throw new Exception("Reuniao " + id + " não cadastrada");
-		}
-		//Remover participante da reunião
-		for (Participante p : r.getParticipantes()) {
+				DAO.begin();
+				//Verificar se a reunião está cadastrada
+				Reuniao r = daoreuniao.read(id);//repositorio.localizarReuniao(id);
+						if (r == null) {
+							DAO.rollback();
+							throw new Exception("Reuniao " + id + " não cadastrada");
+						}
+				System.out.println(r);
+				//Remover participante da reunião
+				for (Participante p : r.getParticipantes()) {
+					p.remover(r);
+					r.remover(p);
+					daoparticipante.update(p);
+					
+				}
 
-			p.remover(r);
-			r.remover(p);
-			daoparticipante.update(p);
-		}
-
-		//apagar reunião no banco
-		daoreuniao.delete(r);
-
-		//...
-		//fim da transacao
-		DAO.commit();
-		//enviar email para todos os participantes
-
+				//apagar reunião no banco
+				daoreuniao.delete(r);
+				
+				//...
+				//fim da transacao
+				DAO.commit();
+				//enviar email para todos os participantes
+				
 	}
+		
 
 	public static void apagarParticipante(String nome) throws Exception 
 	{
@@ -345,7 +340,7 @@ public class Fachada {
 			DAO.commit();
 		}
 
-	}
+	}	
 
 	public static List<Participante> listarParticipantes() {
 		return daoparticipante.readAll(); //...
@@ -357,15 +352,13 @@ public class Fachada {
 		return daoreuniao.readAll();//...
 	}
 	public static List<Participante> consultaA(String nome, int mes) throws Exception{
-
-
 		return daoreuniao.readByData(nome, mes);
-
+		
 	}
-	public static List<Reuniao> consultaB() 	{
+	public static List<Reuniao> consultaB( )throws Exception{
 		return daoconvidado.reuniaotTemConvidado();
 	}
-}
+
 
 	/*
 	 * ********************************************************
@@ -375,6 +368,7 @@ public class Fachada {
 	 * biblioteca java.mail 1.6.2
 	 * ********************************************************
 	 */
+	
 	/*
 	public static void enviarEmail(String emaildestino, String assunto, String mensagem) {
 		try {
@@ -412,6 +406,5 @@ public class Fachada {
 		catch (Exception e) {
 			System.out.println(e.getMessage());
 		}
-	}
+	}*/
 }
-*/

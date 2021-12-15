@@ -1,12 +1,9 @@
 package modelo;
 
 import java.util.ArrayList;
-import java.util.List;
 
-
+import javax.persistence.Cacheable;
 import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
@@ -14,11 +11,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
-import javax.persistence.Lob;
 import javax.persistence.ManyToMany;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.Cacheable;
 
 /**********************************
  * IFPB - Curso Superior de Tec. em Sist. para Internet
@@ -27,30 +20,32 @@ import javax.persistence.Cacheable;
  **********************************/
 @Entity
 @Cacheable(false)
-@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
-
-
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+	
 public class Participante {
 	@Id
 	@GeneratedValue (strategy=GenerationType.IDENTITY)
-		private int id;
-		private String nome; 
-	
+	private int id;
+	private String nome; 
 	private String email;
-	//@ManyToMany
-	//@ManyToMany(mappedBy="participante") 		//default é LAZY
-	//@ManyToOne
-	//@ManyToOne
-	@ManyToMany
-	private List <Reuniao> reunioes = new ArrayList <Reuniao> ();
+	
+	
+	
 
-	/*public Participante(String nome, String email) 	{
+	@ManyToMany(mappedBy="participantes", 
+		cascade= {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, 	
+		fetch=FetchType.LAZY)  	
+	private ArrayList <Reuniao> reunioes = new ArrayList <Reuniao> ();
+	
+	
+	
+	
+	public Participante() {}
+	public Participante(String nome, String email) 	{
 		super();
 		this.nome = nome;
 		this.email = email;
-	}*/
-	
-	public Participante() {}
+	}
 
 	public String getNome() {
 		return nome;
@@ -69,7 +64,7 @@ public class Participante {
 	}
 
 
-	public List<Reuniao> getReunioes() 	{
+	public ArrayList<Reuniao> getReunioes() 	{
 		return reunioes;
 	}
 
@@ -93,11 +88,9 @@ public class Participante {
 		if (reunioes.isEmpty())
 			texto += " sem reunião";
 		else 	
-			for(Reuniao r : reunioes) {	
-				if(r!=null) {
+			for(Reuniao r : reunioes) 	
 				texto += " " + r.getId();
-				}
-			}
+
 		return texto;
 	}
 }

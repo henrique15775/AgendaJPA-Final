@@ -3,12 +3,10 @@ package modelo;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.List;
-import javax.persistence.Cacheable;
 
+import javax.persistence.Cacheable;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
-import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
@@ -16,44 +14,39 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
-import javax.persistence.Lob;
 import javax.persistence.ManyToMany;
-import javax.persistence.OneToMany;
-import javax.persistence.ManyToOne;
 /**********************************
  * IFPB - Curso Superior de Tec. em Sist. para Internet
  * Programação Orientada a Objetos
  * Prof. Fausto Maranhão Ayres
  **********************************/
-
 @Entity 
 @Cacheable(false)
-
 public class Reuniao {
-	@Id
+	@Id		
 	@GeneratedValue (strategy=GenerationType.IDENTITY)
-	private int id;
+	private int id; 		// será autoincrementado dentro do  metodo create() no DAOreuniao 
 	
-	// será autoincrementado dentro do  metodo create() no DAOreuniao 
-	@Column(columnDefinition = "TIMESTAMP")	
-	private LocalDateTime datahora;
+		
+	private String datahora;
 	
 	private String assunto;
 	
+	//default é LAZY
 	
-	@ManyToMany(mappedBy="reunioes",cascade=CascadeType.ALL,		//default é false
-			fetch=FetchType.LAZY)
-	private List <Participante> participantes = new ArrayList <Participante>();
-
-
+	private ArrayList <Participante> participantes = new ArrayList <Participante>();
 	public Reuniao() {}
+	public Reuniao(LocalDateTime datahora, String assunto) 	{
+		this.datahora = datahora.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+		this.assunto = assunto;
+	}
 
 	public void adicionar(Participante p)	{
-		this.participantes.add(p);
+		participantes.add(p);
 	}
 
 	public void remover(Participante p)	{
-		this.participantes.remove(p);
+		participantes.remove(p);
 	}
 
 	public Participante localizarParticipante(String nome)	{
@@ -64,11 +57,11 @@ public class Reuniao {
 		return null;
 	}
 
-	public List<Participante> getParticipantes() 	{
+	public ArrayList<Participante> getParticipantes() 	{
 		return participantes;
 	}
 
-	public void setParticipantes(List<Participante> participantes) 	{
+	public void setParticipantes(ArrayList<Participante> participantes) 	{
 		this.participantes = participantes;
 	}
 
@@ -85,12 +78,11 @@ public class Reuniao {
 	}
 
 	public LocalDateTime getDatahora() 	{
-		return this.datahora;
-		//return LocalDateTime.parse(this.datahora, DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+		return LocalDateTime.parse(this.datahora, DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
 	}
 
 	public void setDatahora(LocalDateTime dth) 	{
-		this.datahora = dth; //dth.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+		this.datahora = dth.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
 	}
 
 	public String getAssunto() 	{
@@ -106,12 +98,10 @@ public class Reuniao {
 		String texto = "id: " + id + ", Horário: " + datahora + ", Assunto: " + assunto;
 
 		texto +=  "\n Participantes:";
-		for(Participante p: participantes) {
-			if(p != null) {
+		for(Participante p: participantes) 
 			texto += " " + p.getNome();
-			}}
+
 		return texto ;
-		
 	}
 }
 
